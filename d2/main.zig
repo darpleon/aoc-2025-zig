@@ -1,5 +1,14 @@
 const std = @import("std");
 
+const pow10 = blk: {
+    var table: [20]u64 = undefined;
+    table[0] = 1;
+    for (1..table.len) |i| {
+        table[i] = table[i - 1] * 10;
+    }
+    break :blk table;
+};
+
 pub fn splitByHyphen(range: []const u8) !struct { []const u8, []const u8 } {
     const dash_index: usize = std.mem.indexOfScalar(u8, range, '-') orelse return error.MissingHyphen;
     return .{ range[0..dash_index], range[dash_index + 1 ..] };
@@ -28,7 +37,7 @@ pub fn lowestBlock(allocator: std.mem.Allocator, n: u64, num_str: []const u8) !u
         return first;
     } else {
         const pow = num_str.len / n;
-        return std.math.powi(u64, 10, pow);
+        return pow10[pow];
     }
 }
 
@@ -44,7 +53,7 @@ pub fn highestBlock(allocator: std.mem.Allocator, n: u64, num_str: []const u8) !
         return first;
     } else {
         const pow = num_str.len / n;
-        return (try std.math.powi(u64, 10, pow)) - 1;
+        return pow10[pow] - 1;
     }
 }
 
@@ -84,10 +93,10 @@ pub fn main() !void {
 
             var base: u64 = std.math.log10_int(lowest);
             for (lowest..highest + 1) |num| {
-                if (num >= try std.math.powi(u64, 10, base)) base += 1;
+                if (num >= pow10[base]) base += 1;
                 var entry: u64 = 0;
                 for (0..n) |i| {
-                    entry += num * try std.math.powi(u64, 10, i * base);
+                    entry += num * pow10[i * base];
                 }
                 try found.put(entry, {});
             }
