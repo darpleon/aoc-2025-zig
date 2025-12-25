@@ -5,24 +5,10 @@ pub fn splitByHyphen(range: []const u8) !struct { []const u8, []const u8 } {
     return .{ range[0..dash_index], range[dash_index + 1 ..] };
 }
 
-const LeftRight = struct { left: u64, right: u64 };
-const StartEnd = struct { start: LeftRight, end: LeftRight };
-
-const NumPow = struct { num: u64, pow: u64 };
-
-pub fn pow10(exponent: u64) u64 {
-    return std.math.powi(u64, 10, exponent) catch unreachable;
-}
-
-pub fn sumBetween(a: u64, b: u64) u64 {
-    return (b + a) * (b - a + 1) / 2;
-}
-
 pub fn splitNum(allocator: std.mem.Allocator, n: u64, num_str: []const u8) ![]const u64 {
     std.debug.assert(num_str.len % n == 0);
     const chunk_size = num_str.len / n;
     var parts = try std.ArrayList(u64).initCapacity(allocator, n);
-    errdefer parts.deinit(allocator);
     for (0..n) |i| {
         const chunk = num_str[i * chunk_size .. (i + 1) * chunk_size];
         parts.appendAssumeCapacity(try std.fmt.parseInt(u64, chunk, 10));
@@ -33,6 +19,7 @@ pub fn splitNum(allocator: std.mem.Allocator, n: u64, num_str: []const u8) ![]co
 pub fn lowestBlock(allocator: std.mem.Allocator, n: u64, num_str: []const u8) !u64 {
     if (num_str.len % n == 0) {
         const split: []const u64 = try splitNum(allocator, n, num_str);
+        defer allocator.free(split);
         const first = split[0];
         for (split[1..]) |num| {
             if (num < first) return first;
@@ -48,6 +35,7 @@ pub fn lowestBlock(allocator: std.mem.Allocator, n: u64, num_str: []const u8) !u
 pub fn highestBlock(allocator: std.mem.Allocator, n: u64, num_str: []const u8) !u64 {
     if (num_str.len % n == 0) {
         const split: []const u64 = try splitNum(allocator, n, num_str);
+        defer allocator.free(split);
         const first = split[0];
         for (split[1..]) |num| {
             if (num > first) return first;
@@ -87,6 +75,7 @@ pub fn main() !void {
         const start_str, const end_str = try splitByHyphen(range_str);
 
         var found = std.AutoArrayHashMap(u64, void).init(allocator);
+        defer found.deinit();
         for (2..@max(start_str.len, end_str.len) + 1) |n| {
             const lowest: u64 = try lowestBlock(allocator, n, start_str);
             const highest: u64 = try highestBlock(allocator, n, end_str);
@@ -106,7 +95,6 @@ pub fn main() !void {
         for (found.keys()) |num| {
             sum += num;
         }
-        found.clearAndFree();
     }
 
     std.debug.print("sum: {d}\n", .{sum});
