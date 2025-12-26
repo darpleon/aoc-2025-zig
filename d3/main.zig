@@ -16,25 +16,24 @@ pub fn main() !void {
         if (line.len < 2) return error.LineTooShort;
 
         var digits: [digit_count]u64 = .{0} ** digit_count;
-        for (line) |char| {
+        var head: usize = 0;
+        for (line, 0..) |char, i| {
             const new_digit: u64 = char - '0';
 
-            for (0..digit_count - 1) |i| {
-                if (digits[i] < digits[i + 1]) {
-                    digits[i] = digits[i + 1];
-                    digits[i + 1] = 0;
-                }
-            }
-            
-            if (new_digit > digits[digit_count - 1]) {
-                digits[digit_count - 1] = new_digit;
+            while (head > 0 and digit_count - head < line.len - i and
+                new_digit > digits[head - 1]) : (head -= 1)
+            {}
+
+            if (head < digit_count) {
+                digits[head] = new_digit;
+                head += 1;
             }
         }
-        var pow10: u64 = 1;
-        for (0..digit_count) |i| {
-            sum += pow10 * digits[digit_count - i - 1];
-            pow10 *= 10;
+        var joltage: u64 = 0;
+        for (digits) |digit| {
+            joltage = joltage * 10 + digit;
         }
+        sum += joltage;
     } else |err| return err;
     std.debug.print("sum: {d}\n", .{sum});
 }
